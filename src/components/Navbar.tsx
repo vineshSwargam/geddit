@@ -11,7 +11,6 @@ const Navbar = async () => {
   return (
     <div className='fixed top-0 inset-x-0 h-fit bg-gray-100 border-b border-zinc-300 z-[10] py-2'>
       <div className='container max-w-7xl h-full mx-auto flex items-center justify-between gap-2'>
-        {/* logo */}
         <Link href='/' className='flex gap-1 items-center'>
           <Image
             src={'/assets/images/gedditFireLogo.png'}
@@ -21,11 +20,7 @@ const Navbar = async () => {
           />
           <p className='hidden text-red-600 text-base font-bold md:block'>geddit</p>
         </Link>
-
-        {/* search bar */}
         <SearchBar />
-
-        {/* actions */}
         {session?.user ? (
           <UserAccountNav user={session.user} />
         ) : (

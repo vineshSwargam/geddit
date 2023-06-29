@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import axios from 'axios'
 import debounce from 'lodash.debounce'
 import { usePathname, useRouter } from 'next/navigation'
-import { FC, useCallback, useEffect, useRef, useState } from 'react'
+import { FC, useEffect, useRef, useState } from 'react'
 
 import {
   Command,
@@ -30,16 +30,6 @@ const SearchBar: FC<SearchBarProps> = ({}) => {
     setInput('')
   })
 
-  const request = debounce(async () => {
-    refetch()
-  }, 300)
-
-  const debounceRequest = useCallback(() => {
-    request()
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
   const {
     isFetching,
     data: queryResults,
@@ -56,6 +46,8 @@ const SearchBar: FC<SearchBarProps> = ({}) => {
     queryKey: ['search-query'],
     enabled: false,
   })
+
+  const debounceRequest = debounce(async () => refetch(), 300);
 
   useEffect(() => {
     setInput('')
