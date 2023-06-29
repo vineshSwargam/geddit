@@ -1,15 +1,16 @@
-import Navbar from '@/components/Navbar'
-import { cn } from '@/lib/utils'
-import { Inter } from 'next/font/google'
-import Providers from '@/components/Providers'
-import { Toaster } from '@/components/ui/Toaster'
+import Navbar from '@/components/Navbar';
+import Providers from '@/components/Providers';
+import { Toaster } from '@/components/ui/Toaster';
+import { cn } from '@/lib/utils';
+import { Inter } from 'next/font/google';
+import Head from 'next/head';
 
-import '@/styles/globals.css'
+import '@/styles/globals.css';
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
-  title: 'Breadit',
+  title: 'geddit',
   description: 'A Reddit clone built with Next.js and TypeScript.',
 }
 
@@ -28,6 +29,9 @@ export default function RootLayout({
         inter.className
       )}>
       <body className='min-h-screen pt-12 bg-slate-50 antialiased'>
+        <Head>
+          <link rel="geddit Icon" href="/assets/images/gedditFireLogo.png" />
+        </Head>
         <Providers>
           {/* @ts-expect-error Server Component */}
           <Navbar />
