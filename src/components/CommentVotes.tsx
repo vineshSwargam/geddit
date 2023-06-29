@@ -31,7 +31,7 @@ const CommentVotes: FC<CommentVotesProps> = ({
   )
   const prevVote = usePrevious(currentVote)
 
-  const { mutate: vote } = useMutation({
+  const { mutate: vote, isLoading } = useMutation({
     mutationFn: async (type: VoteType) => {
       const payload: CommentVoteRequest = {
         voteType: type,
@@ -80,6 +80,7 @@ const CommentVotes: FC<CommentVotesProps> = ({
       {/* upvote */}
       <Button
         onClick={() => vote('UP')}
+        disabled={isLoading}
         size='xs'
         variant='ghost'
         aria-label='upvote'>
@@ -87,7 +88,7 @@ const CommentVotes: FC<CommentVotesProps> = ({
           className={cn('h-5 w-5 text-zinc-700', {
             'text-emerald-500 fill-emerald-500': currentVote?.type === 'UP',
           })}
-        />
+          />
       </Button>
 
       {/* score */}
@@ -98,6 +99,7 @@ const CommentVotes: FC<CommentVotesProps> = ({
       {/* downvote */}
       <Button
         onClick={() => vote('DOWN')}
+        disabled={isLoading}
         size='xs'
         className={cn({
           'text-emerald-500': currentVote?.type === 'DOWN',

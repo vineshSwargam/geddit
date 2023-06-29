@@ -43,7 +43,7 @@ export async function GET(req: Request) {
           name: subredditName,
         },
       }
-    } else if (session) {
+    } else if (session && followedCommunitiesIds.length) {
       whereClause = {
         subreddit: {
           id: {
