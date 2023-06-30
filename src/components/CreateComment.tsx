@@ -5,7 +5,6 @@ import { toast } from '@/hooks/use-toast'
 import { CommentRequest } from '@/lib/validators/comment'
 
 import { useCustomToasts } from '@/hooks/use-custom-toasts'
-import { useMutation } from '@tanstack/react-query'
 import axios, { AxiosError } from 'axios'
 import { useRouter } from 'next/navigation'
 import { FC, useState } from 'react'
@@ -20,23 +19,24 @@ interface CreateCommentProps {
 const CreateComment: FC<CreateCommentProps> = ({ postId, replyToId }) => {
   const [input, setInput] = useState<string>('')
   const router = useRouter()
-  const { loginToast } = useCustomToasts()
+  const { loginToast } = useCustomToasts();
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const { mutate: comment, isLoading } = useMutation({
-    mutationFn: async ({ postId, text, replyToId }: CommentRequest) => {
+  const addComment = async ({ postId, text, replyToId }: CommentRequest) => {
+    setIsLoading(true);
+    try {
       const payload: CommentRequest = { postId, text, replyToId }
-
       const { data } = await axios.patch(
         `/api/subreddit/post/comment/`,
         payload
-      )
-      return data
-    },
-
-    onError: (err) => {
+      );
+      router.refresh();
+      setInput('');
+      return data;
+    } catch (err) {
       if (err instanceof AxiosError) {
         if (err.response?.status === 401) {
-          return loginToast()
+          return loginToast();
         }
       }
 
@@ -44,13 +44,11 @@ const CreateComment: FC<CreateCommentProps> = ({ postId, replyToId }) => {
         title: 'Something went wrong.',
         description: "Comment wasn't created successfully. Please try again.",
         variant: 'destructive',
-      })
-    },
-    onSuccess: () => {
-      router.refresh()
-      setInput('')
-    },
-  })
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className='grid w-full gap-1.5'>
@@ -68,7 +66,7 @@ const CreateComment: FC<CreateCommentProps> = ({ postId, replyToId }) => {
           <Button
             isLoading={isLoading}
             disabled={input.length === 0}
-            onClick={() => comment({ postId, text: input, replyToId })}>
+            onClick={() => addComment({ postId, text: input, replyToId })}>
             Post
           </Button>
         </div>

@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/Input'
 import { toast } from '@/hooks/use-toast'
 import { useCustomToasts } from '@/hooks/use-custom-toasts'
 import { CreateSubredditPayload } from '@/lib/validators/subreddit'
-import { useMutation } from '@tanstack/react-query'
 import axios, { AxiosError } from 'axios'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
@@ -13,18 +12,19 @@ import { useState } from 'react'
 const Page = () => {
   const router = useRouter()
   const [input, setInput] = useState<string>('')
-  const { loginToast } = useCustomToasts()
+  const { loginToast } = useCustomToasts();
+  const [isCreating, setIsCreating] = useState<boolean>(false);
 
-  const { mutate: createCommunity, isLoading } = useMutation({
-    mutationFn: async () => {
+  const createCommunity = async () => {
+    setIsCreating(true);
+    try {
       const payload: CreateSubredditPayload = {
         name: input,
       }
-
-      const { data } = await axios.post('/api/subreddit', payload)
-      return data as string
-    },
-    onError: (err) => {
+      const { data } = await axios.post('/api/subreddit', payload);
+      router.push(`/r/${data}`);
+      return data as string;
+    } catch (err) {
       if (err instanceof AxiosError) {
         if (err.response?.status === 409) {
           return toast({
@@ -33,7 +33,7 @@ const Page = () => {
             variant: 'destructive',
           })
         }
-
+    
         if (err.response?.status === 422) {
           return toast({
             title: 'Invalid subreddit name.',
@@ -41,22 +41,21 @@ const Page = () => {
             variant: 'destructive',
           })
         }
-
+    
         if (err.response?.status === 401) {
           return loginToast()
         }
       }
-
+    
       toast({
         title: 'There was an error.',
         description: 'Could not create subreddit.',
         variant: 'destructive',
       })
-    },
-    onSuccess: (data) => {
-      router.push(`/r/${data}`)
-    },
-  })
+    } finally {
+      setIsCreating(false);
+    }
+  }
 
   return (
     <div className='container flex items-center h-full max-w-3xl mx-auto'>
@@ -86,13 +85,13 @@ const Page = () => {
 
         <div className='flex justify-end gap-4'>
           <Button
-            disabled={isLoading}
+            disabled={isCreating}
             variant='subtle'
             onClick={() => router.back()}>
             Cancel
           </Button>
           <Button
-            isLoading={isLoading}
+            isLoading={isCreating}
             disabled={input.length === 0}
             onClick={() => createCommunity()}>
             Create Community

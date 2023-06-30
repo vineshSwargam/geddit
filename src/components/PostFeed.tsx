@@ -3,11 +3,10 @@
 import { INFINITE_SCROLL_PAGINATION_RESULTS } from '@/config'
 import { ExtendedPost } from '@/types/db'
 import { useIntersection } from '@mantine/hooks'
-import { useInfiniteQuery } from '@tanstack/react-query'
 import axios from 'axios'
 import { Loader2 } from 'lucide-react'
 import { useSession } from 'next-auth/react'
-import { FC, useEffect, useRef } from 'react'
+import { FC, useEffect, useRef, useState } from 'react'
 import Post from './Post'
 
 interface PostFeedProps {
@@ -16,38 +15,48 @@ interface PostFeedProps {
 }
 
 const PostFeed: FC<PostFeedProps> = ({ initialPosts, subredditName }) => {
-  const lastPostRef = useRef<HTMLElement>(null)
+  const { data: session } = useSession()
+  const lastPostRef = useRef<HTMLElement>(null);
   const { ref, entry } = useIntersection({
     root: lastPostRef.current,
     threshold: 1,
-  })
-  const { data: session } = useSession()
+  });
+  const [intersectingPostId, setIntersectingPostId] = useState<boolean>(false);
+  const [posts, setPosts] = useState<ExtendedPost[]>(initialPosts);
+  const [nextPageNumber, setNextPageNumber] = useState<number>(2);
+  const [isFetchingNextPage, setIsFetchingNextPage] = useState<boolean>(false);
 
-  const { data, fetchNextPage, isFetchingNextPage } = useInfiniteQuery(
-    ['infinite-query'],
-    async ({ pageParam = 1 }) => {
-      const pageQueryParam = `?limit=${INFINITE_SCROLL_PAGINATION_RESULTS}&page=${pageParam}`;
+  const fetchNextPage = async (pageNumber: number) => {
+    setIsFetchingNextPage(true);
+    try {
+      const pageQueryParam = `?limit=${INFINITE_SCROLL_PAGINATION_RESULTS}&page=${pageNumber}`;
       const subredditQueryParam = !!subredditName ? `&subredditName=${subredditName}` : '';
       const query = `/api/posts${pageQueryParam}${subredditQueryParam}`;
+      const { data } = await axios.get(query);
+      // if ((data as ExtendedPost[]).at(-1)?.id === posts.at(-1)?.id) {
 
-      const { data } = await axios.get(query)
-      return data as ExtendedPost[]
-    },
-    {
-      getNextPageParam: (_, pages) => {
-        return pages.length + 1
-      },
-      initialData: { pages: [initialPosts], pageParams: [1] },
+      // }
+      setPosts([...posts, ...data]);
+      setNextPageNumber(pageNumber + 1);
+      return data as ExtendedPost[];
+    } catch (err) {
+      setNextPageNumber(pageNumber);
+    } finally {
+      setIsFetchingNextPage(false);
     }
-  )
+  };
 
   useEffect(() => {
-    if (entry?.isIntersecting) {
-      fetchNextPage() // Load more posts when the last post comes into view
+    // setIsFetchingNextPage(true);
+    console.log({ isIntersecting: entry?.isIntersecting, isFetchingNextPage });
+    if (entry?.isIntersecting && !isFetchingNextPage) {
+      console.log('FETCHING');
+      fetchNextPage(nextPageNumber); // Load more posts when the last post comes into view
     }
-  }, [entry, fetchNextPage])
+    // setIsFetchingNextPage(false);
+  }, [entry?.isIntersecting])
 
-  const posts = data?.pages.flatMap((page) => page) ?? initialPosts
+  console.log({ posts });
 
   return (
     <ul className='flex flex-col col-span-2 space-y-6'>

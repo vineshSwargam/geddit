@@ -4,7 +4,6 @@ import { useOnClickOutside } from '@/hooks/use-on-click-outside'
 import { formatTimeToNow } from '@/lib/utils'
 import { CommentRequest } from '@/lib/validators/comment'
 import { Comment, CommentVote, User } from '@prisma/client'
-import { useMutation } from '@tanstack/react-query'
 import axios from 'axios'
 import { MessageSquare } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -37,36 +36,36 @@ const PostComment: FC<PostCommentProps> = ({
 }) => {
   const { data: session } = useSession()
   const [isReplying, setIsReplying] = useState<boolean>(false)
-  const commentRef = useRef<HTMLDivElement>(null)
-  const [input, setInput] = useState<string>(`@${comment.author.username} `)
-  const router = useRouter()
+  const commentRef = useRef<HTMLDivElement>(null);
+  const [input, setInput] = useState<string>(`@${comment.author.username} `);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const router = useRouter();
+
   useOnClickOutside(commentRef, () => {
     setIsReplying(false)
   })
 
-  const { mutate: postComment, isLoading } = useMutation({
-    mutationFn: async ({ postId, text, replyToId }: CommentRequest) => {
+  const postReplyComment = async ({ postId, text, replyToId }: CommentRequest) => {
+    setIsLoading(true);
+    try {
       const payload: CommentRequest = { postId, text, replyToId }
-
       const { data } = await axios.patch(
         `/api/subreddit/post/comment/`,
         payload
-      )
-      return data
-    },
-
-    onError: () => {
+      );
+      router.refresh();
+      setIsReplying(false);
+      return data;
+    } catch {
       return toast({
         title: 'Something went wrong.',
         description: "Comment wasn't created successfully. Please try again.",
         variant: 'destructive',
-      })
-    },
-    onSuccess: () => {
-      router.refresh()
-      setIsReplying(false)
-    },
-  })
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div ref={commentRef} className='flex flex-col'>
@@ -138,7 +137,7 @@ const PostComment: FC<PostCommentProps> = ({
                 isLoading={isLoading}
                 onClick={() => {
                   if (!input) return
-                  postComment({
+                  postReplyComment({
                     postId,
                     text: input,
                     replyToId: comment.replyToId ?? comment.id, // default to top-level comment

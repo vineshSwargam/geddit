@@ -11,7 +11,6 @@ import { z } from 'zod'
 import { toast } from '@/hooks/use-toast'
 import { uploadFiles } from '@/lib/uploadthing'
 import { PostCreationRequest, PostValidator } from '@/lib/validators/post'
-import { useMutation } from '@tanstack/react-query'
 import axios from 'axios'
 
 import '@/styles/editor.css'
@@ -39,37 +38,35 @@ export const Editor: React.FC<EditorProps> = ({ subredditId }) => {
   const _titleRef = useRef<HTMLTextAreaElement>(null)
   const router = useRouter()
   const [isMounted, setIsMounted] = useState<boolean>(false)
+  const [isImageUploading, setIsImageUploading] = useState<boolean>(false)
   const pathname = usePathname()
 
-  const { mutate: createPost } = useMutation({
-    mutationFn: async ({
-      title,
-      content,
-      subredditId,
-    }: PostCreationRequest) => {
+  const createPost = async ({
+    title,
+    content,
+    subredditId,
+  }: PostCreationRequest) => {
+    try {
       const payload: PostCreationRequest = { title, content, subredditId }
       const { data } = await axios.post('/api/subreddit/post/create', payload)
-      return data
-    },
-    onError: () => {
+      return data;
+    } catch (err) {
       return toast({
         title: 'Something went wrong.',
         description: 'Your post was not published. Please try again.',
         variant: 'destructive',
-      })
-    },
-    onSuccess: () => {
+      });
+    } finally {
       // turn pathname /r/mycommunity/submit into /r/mycommunity
-      const newPathname = pathname.split('/').slice(0, -1).join('/')
-      router.push(newPathname)
-
-      router.refresh()
-
+      const newPathname = pathname.split('/').slice(0, -1).join('/');
+      router.push(newPathname);
+      router.refresh();
+      
       return toast({
         description: 'Your post has been published.',
-      })
-    },
-  })
+      });
+    }
+  };
 
   const initializeEditor = useCallback(async () => {
     const EditorJS = (await import('@editorjs/editorjs')).default
@@ -105,8 +102,10 @@ export const Editor: React.FC<EditorProps> = ({ subredditId }) => {
               uploader: {
                 async uploadByFile(file: File) {
                   // upload to uploadthing
+                  setIsImageUploading(true);
                   const [res] = await uploadFiles([file], 'imageUploader')
-
+                  
+                  setIsImageUploading(false);
                   return {
                     success: 1,
                     file: {
@@ -166,6 +165,13 @@ export const Editor: React.FC<EditorProps> = ({ subredditId }) => {
   }, [isMounted, initializeEditor])
 
   async function onSubmit(data: FormData) {
+    if (isImageUploading) {
+      return toast({
+        title: 'Image upload in progress..',
+        description: 'Please wait until your image is uploaded',
+        variant: 'default',
+      })
+    }
     const blocks = await ref.current?.save()
 
     const payload: PostCreationRequest = {

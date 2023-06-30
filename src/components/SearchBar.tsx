@@ -1,12 +1,10 @@
 'use client'
 
 import { Prisma, Subreddit } from '@prisma/client'
-import { useQuery } from '@tanstack/react-query'
 import axios from 'axios'
 import debounce from 'lodash.debounce'
 import { usePathname, useRouter } from 'next/navigation'
 import { FC, useEffect, useRef, useState } from 'react'
-
 import {
   Command,
   CommandEmpty,
@@ -22,6 +20,9 @@ interface SearchBarProps {}
 
 const SearchBar: FC<SearchBarProps> = ({}) => {
   const [input, setInput] = useState<string>('')
+  const [isFetching, setIsFetching] = useState<boolean>(false);
+  const [queryResults, setQueryResults] =
+    useState<(Subreddit & { _count: Prisma.SubredditCountOutputType })[]>();
   const pathname = usePathname()
   const commandRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
@@ -30,24 +31,13 @@ const SearchBar: FC<SearchBarProps> = ({}) => {
     setInput('')
   })
 
-  const {
-    isFetching,
-    data: queryResults,
-    refetch,
-    isFetched,
-  } = useQuery({
-    queryFn: async () => {
-      if (!input) return []
-      const { data } = await axios.get(`/api/search?q=${input}`)
-      return data as (Subreddit & {
-        _count: Prisma.SubredditCountOutputType
-      })[]
-    },
-    queryKey: ['search-query'],
-    enabled: false,
-  })
-
-  const debounceRequest = debounce(async () => refetch(), 300);
+  const getSearchResults = async () => {
+    if (!input) return [];
+    const { data } = await axios.get(`/api/search?q=${input}`);
+    setQueryResults(data);
+  }
+  
+  const debounceRequest = debounce(async () => getSearchResults(), 300);
 
   useEffect(() => {
     setInput('')
@@ -60,8 +50,8 @@ const SearchBar: FC<SearchBarProps> = ({}) => {
       <CommandInput
         isLoading={isFetching}
         onValueChange={(text) => {
-          setInput(text)
-          debounceRequest()
+          setInput(text);
+          debounceRequest();
         }}
         value={input}
         className='outline-none border-none focus:border-none focus:outline-none ring-0'
@@ -70,7 +60,7 @@ const SearchBar: FC<SearchBarProps> = ({}) => {
 
       {input.length > 0 && (
         <CommandList className='absolute bg-white top-full inset-x-0 shadow rounded-b-md'>
-          {isFetched && <CommandEmpty>No results found.</CommandEmpty>}
+          {!isFetching && <CommandEmpty>No results found.</CommandEmpty>}
           {(queryResults?.length ?? 0) > 0 ? (
             <CommandGroup heading='Communities'>
               {queryResults?.map((subreddit) => (
@@ -93,4 +83,4 @@ const SearchBar: FC<SearchBarProps> = ({}) => {
   )
 }
 
-export default SearchBar
+export default SearchBar;

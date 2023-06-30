@@ -21,7 +21,6 @@ import { Label } from '@/components/ui/Label'
 import { toast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { UsernameValidator } from '@/lib/validators/username'
-import { useMutation } from '@tanstack/react-query'
 import axios, { AxiosError } from 'axios'
 
 interface UserNameFormProps extends React.HTMLAttributes<HTMLFormElement> {
@@ -42,38 +41,39 @@ export function UserNameForm({ user, className, ...props }: UserNameFormProps) {
       name: user?.username || '',
     },
   })
+  const [isLoading, setIsLoading] = React.useState<boolean>(false);
 
-  const { mutate: updateUsername, isLoading } = useMutation({
-    mutationFn: async ({ name }: FormData) => {
-      const payload: FormData = { name }
-
-      const { data } = await axios.patch(`/api/username/`, payload)
-      return data
-    },
-    onError: (err) => {
+  const updateUsername = async ({ name }: FormData) => {
+    setIsLoading(true);
+    try {
+      const payload: FormData = { name };
+      const { data } = await axios.patch(`/api/username/`, payload);
+      toast({
+        description: 'Your username has been updated.',
+      })
+      router.refresh();
+      return data;
+      
+    } catch (err: any) {
       if (err instanceof AxiosError) {
         if (err.response?.status === 409) {
           return toast({
             title: 'Username already taken.',
             description: 'Please choose another username.',
             variant: 'destructive',
-          })
+          });
         }
       }
-
+      
       return toast({
         title: 'Something went wrong.',
         description: 'Your username was not updated. Please try again.',
         variant: 'destructive',
-      })
-    },
-    onSuccess: () => {
-      toast({
-        description: 'Your username has been updated.',
-      })
-      router.refresh()
-    },
-  })
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   return (
     <form
