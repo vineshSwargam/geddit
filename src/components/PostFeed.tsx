@@ -47,16 +47,10 @@ const PostFeed: FC<PostFeedProps> = ({ initialPosts, subredditName }) => {
   };
 
   useEffect(() => {
-    // setIsFetchingNextPage(true);
-    console.log({ isIntersecting: entry?.isIntersecting, isFetchingNextPage });
     if (entry?.isIntersecting && !isFetchingNextPage) {
-      console.log('FETCHING');
       fetchNextPage(nextPageNumber); // Load more posts when the last post comes into view
     }
-    // setIsFetchingNextPage(false);
   }, [entry?.isIntersecting])
-
-  console.log({ posts });
 
   return (
     <ul className='flex flex-col col-span-2 space-y-6'>
