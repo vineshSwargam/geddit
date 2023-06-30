@@ -30,7 +30,7 @@ export default function RootLayout({
       )}>
       <body className='min-h-screen pt-12 bg-slate-50 antialiased'>
         <Head>
-          <link rel="geddit Icon" href="/assets/images/gedditFireLogo.png" />
+          <link rel="geddit Icon" href="/favIcon.ico" />
         </Head>
         <Providers>
           {/* @ts-expect-error Server Component */}
